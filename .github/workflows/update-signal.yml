@@ -1,0 +1,41 @@
+name: Update Wheel Signal
+
+on:
+  schedule:
+    - cron: '0 7 * * *'  # 每天下午3点自动运行
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Calculate signal
+        run: python update_signal.py
+
+      - name: Push to Gitee
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 用HTTPS方式克隆Gitee仓库
+          git clone https://sm0617:${{ secrets.GITEE_TOKEN }}@gitee.com/sm0617/wheel-movement-signal.git gitee-repo
+          
+          # 复制信号文件
+          cp signal.json gitee-repo/
+          
+          # 提交并推送
+          cd gitee-repo
+          git add signal.json
+          git commit -m "Update signal $(date +%Y-%m-%d)"
+          git push
